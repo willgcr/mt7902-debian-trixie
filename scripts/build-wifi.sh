@@ -56,8 +56,8 @@ for d in mt76x0 mt76x2 mt7603 mt7615 mt7915 mt7996 mt7925; do
 done
 rm -f mt76x02_*.c mt76x02_*.h
 
-echo ">> applying patches from $REPO_ROOT/patches"
-for p in "$REPO_ROOT"/patches/*.patch; do
+echo ">> applying patches from $REPO_ROOT/patches/wifi"
+for p in "$REPO_ROOT"/patches/wifi/*.patch; do
     echo "   $(basename "$p")"
     git apply "$p"
 done
