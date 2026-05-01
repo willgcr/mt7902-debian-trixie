@@ -12,7 +12,12 @@ set -euo pipefail
 MT76_REPO="${MT76_REPO:-https://github.com/openwrt/mt76.git}"
 MT76_COMMIT="${MT76_COMMIT:-66067d20}"
 BUILD_DIR="${BUILD_DIR:-/tmp/mt76-build}"
-INSTALL_DIR="/lib/modules/$(uname -r)/updates/mediatek"
+# KVER selects which kernel to build against. Defaults to the running kernel
+# so live-system use is unchanged; chroot/initramfs/container builders can
+# pass KERNEL_VERSION=<kernel-release> to target an installed-but-not-running
+# kernel (whose modules dir is at /lib/modules/$KVER/).
+KVER="${KERNEL_VERSION:-$(uname -r)}"
+INSTALL_DIR="/lib/modules/$KVER/updates/mediatek"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 require_root() {
@@ -31,10 +36,10 @@ require_tool git
 require_tool make
 require_tool gcc
 
-KSRC="/lib/modules/$(uname -r)/build"
+KSRC="/lib/modules/$KVER/build"
 if [ ! -d "$KSRC" ]; then
     echo "error: kernel headers not found at $KSRC" >&2
-    echo "install with: apt install linux-headers-$(uname -r)" >&2
+    echo "install with: apt install linux-headers-$KVER" >&2
     exit 1
 fi
 
@@ -71,7 +76,7 @@ install -m 0644 "$BUILD_DIR"/mt7921/mt7921-common.ko "$INSTALL_DIR/mt7921/"
 install -m 0644 "$BUILD_DIR"/mt7921/mt7921e.ko       "$INSTALL_DIR/mt7921/"
 
 echo ">> running depmod"
-depmod -a "$(uname -r)"
+depmod -a "$KVER"
 
 echo
 echo "done. verify with:"

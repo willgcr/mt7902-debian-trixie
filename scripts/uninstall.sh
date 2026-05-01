@@ -4,7 +4,10 @@
 
 set -euo pipefail
 
-INSTALL_DIR="/lib/modules/$(uname -r)/updates/mediatek"
+# Mirrors build.sh: defaults to the running kernel; chroot/initramfs callers
+# can override via KERNEL_VERSION=<kernel-release> to target a non-running one.
+KVER="${KERNEL_VERSION:-$(uname -r)}"
+INSTALL_DIR="/lib/modules/$KVER/updates/mediatek"
 FW_DIR="/lib/firmware/mediatek"
 FILES=(
     WIFI_MT7902_patch_mcu_1_1_hdr.bin
@@ -18,7 +21,7 @@ fi
 
 echo ">> removing modules from $INSTALL_DIR"
 rm -rf "$INSTALL_DIR"
-depmod -a "$(uname -r)"
+depmod -a "$KVER"
 
 echo ">> restoring pre-mt7902 firmware backups (if any)"
 for f in "${FILES[@]}"; do
