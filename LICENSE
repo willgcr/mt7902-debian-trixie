@@ -8,6 +8,13 @@ project (https://github.com/openwrt/mt76), which is itself licensed under the
 BSD 3-Clause Clear License. This repository preserves that license for the
 derived work; original mt76 copyright headers remain in the patched files.
 
+The btmtk driver patch in patches/bt/ is derived from the Linux kernel's
+drivers/bluetooth/btmtk.c and drivers/bluetooth/btmtk.h, which carry an
+SPDX-License-Identifier of ISC. That patch and any redistribution of the
+patched btmtk source therefore inherit the ISC license; the rest of this
+repository (build/install scripts, README, this LICENSE file) remains
+BSD 3-Clause Clear as below.
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
 below) provided that the following conditions are met:

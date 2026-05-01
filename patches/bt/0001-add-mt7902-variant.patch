@@ -1,0 +1,49 @@
+From: mt7902-debian-trixie contributors
+Subject: [PATCH] btmtk: recognize MT7902 hardware variant
+
+The btmtk USB setup path matches the chip ID reported by the device
+against a switch/case list in btmtk_usb_setup. On kernels that predate
+upstream commit "Bluetooth: btmtk: Add support for MT7902"
+(merged after the 6.12.x stable cycle), MT7902 (dev_id 0x7902) falls
+into the default branch and the driver bails out with:
+
+    Bluetooth: hciN: Unsupported hardware variant (00007902)
+
+This patch backports the minimal additions needed to bring the chip up
+on the existing 79xx code path, which already covers MT7921/7922/7925
+/7961: the firmware filename define and a `case 0x7902:` entry in the
+variant switch. No changes to btmtk_setup_firmware_79xx() or
+btmtk_fw_get_filename() are required, since both already handle the
+0x79xx-style dev_ids generically and the firmware file MediaTek ships
+for MT7902 follows the same naming convention
+(BT_RAM_CODE_MT%04x_1_%x_hdr.bin).
+
+Tested on Debian trixie kernel 6.12.73+deb13-amd64 with USB 0e8d:7902.
+
+--- a/btmtk.h
++++ b/btmtk.h
+@@ -5,6 +5,7 @@
+ #define FIRMWARE_MT7663		"mediatek/mt7663pr2h.bin"
+ #define FIRMWARE_MT7668		"mediatek/mt7668pr2h.bin"
+ #define FIRMWARE_MT7922		"mediatek/BT_RAM_CODE_MT7922_1_1_hdr.bin"
++#define FIRMWARE_MT7902		"mediatek/BT_RAM_CODE_MT7902_1_1_hdr.bin"
+ #define FIRMWARE_MT7961		"mediatek/BT_RAM_CODE_MT7961_1_2_hdr.bin"
+ #define FIRMWARE_MT7925		"mediatek/mt7925/BT_RAM_CODE_MT7925_1_1_hdr.bin"
+
+--- a/btmtk.c
++++ b/btmtk.c
+@@ -1326,6 +1326,7 @@
+ 	case 0x7922:
+ 	case 0x7925:
+ 	case 0x7961:
++	case 0x7902:
+ 		btmtk_fw_get_filename(fw_bin_name, sizeof(fw_bin_name), dev_id,
+ 				      fw_version, fw_flavor);
+
+@@ -1495,5 +1496,6 @@
+ MODULE_FIRMWARE(FIRMWARE_MT7663);
+ MODULE_FIRMWARE(FIRMWARE_MT7668);
+ MODULE_FIRMWARE(FIRMWARE_MT7922);
++MODULE_FIRMWARE(FIRMWARE_MT7902);
+ MODULE_FIRMWARE(FIRMWARE_MT7961);
+ MODULE_FIRMWARE(FIRMWARE_MT7925);

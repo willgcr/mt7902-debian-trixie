@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Install MT7902 Wi-Fi firmware blobs from the upstream linux-firmware tree
-# into /lib/firmware/mediatek/. Pre-existing same-named files are backed
-# up with a .pre-mt7902 suffix.
+# Install MT7902 Wi-Fi and Bluetooth firmware blobs from the upstream
+# linux-firmware tree into /lib/firmware/mediatek/. Pre-existing same-named
+# files are backed up with a .pre-mt7902 suffix.
 #
 # Why these specific blobs: on the test hardware, the linux-firmware blobs
-# load and run cleanly. A previously-installed set of MT7902 firmware files
-# (different byte counts) loaded but caused the chip to stall on the 14th
-# MCU command after init (recurring "Message 00020001 timeout" reset loop).
-# This script does not bundle the blobs; it fetches them from kernel.org.
+# load and run cleanly. A previously-installed set of MT7902 Wi-Fi firmware
+# files (different byte counts) loaded but caused the chip to stall on the
+# 14th MCU command after init (recurring "Message 00020001 timeout" reset
+# loop). The MT7902 BT blob was simply missing from the test machine and
+# is required before the patched btmtk module can complete the firmware
+# download handshake. This script does not bundle the blobs; it fetches
+# them from kernel.org.
 
 set -euo pipefail
 
@@ -17,6 +20,7 @@ FW_DIR="/lib/firmware/mediatek"
 FILES=(
     WIFI_MT7902_patch_mcu_1_1_hdr.bin
     WIFI_RAM_CODE_MT7902_1.bin
+    BT_RAM_CODE_MT7902_1_1_hdr.bin
 )
 
 if [ "$(id -u)" -ne 0 ]; then
