@@ -1,0 +1,119 @@
+diff --git a/mac80211.c b/mac80211.c
+index beb5a0c6..48ffbbc7 100644
+--- a/mac80211.c
++++ b/mac80211.c
+@@ -1774,7 +1774,7 @@ s8 mt76_get_power_bound(struct mt76_phy *phy, s8 txpower)
+ EXPORT_SYMBOL_GPL(mt76_get_power_bound);
+ 
+ int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+-		     unsigned int link_id, int *dbm)
++		     int *dbm)
+ {
+ 	struct mt76_phy *phy = mt76_vif_phy(hw, vif);
+ 	int n_chains, delta;
+@@ -1954,7 +1954,7 @@ void mt76_sw_scan_complete(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
+ }
+ EXPORT_SYMBOL_GPL(mt76_sw_scan_complete);
+ 
+-int mt76_get_antenna(struct ieee80211_hw *hw, int radio_idx, u32 *tx_ant,
++int mt76_get_antenna(struct ieee80211_hw *hw, u32 *tx_ant,
+ 		     u32 *rx_ant)
+ {
+ 	struct mt76_phy *phy = hw->priv;
+diff --git a/mt76.h b/mt76.h
+index df66b70b..217d1329 100644
+--- a/mt76.h
++++ b/mt76.h
+@@ -1591,7 +1591,7 @@ int mt76_get_min_avg_rssi(struct mt76_dev *dev, u8 phy_idx);
+ s8 mt76_get_power_bound(struct mt76_phy *phy, s8 txpower);
+ 
+ int mt76_get_txpower(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+-		     unsigned int link_id, int *dbm);
++		     int *dbm);
+ int mt76_init_sar_power(struct ieee80211_hw *hw,
+ 			const struct cfg80211_sar_specs *sar);
+ int mt76_get_sar_power(struct mt76_phy *phy,
+@@ -1601,7 +1601,7 @@ int mt76_get_sar_power(struct mt76_phy *phy,
+ void mt76_csa_check(struct mt76_dev *dev);
+ void mt76_csa_finish(struct mt76_dev *dev);
+ 
+-int mt76_get_antenna(struct ieee80211_hw *hw, int radio_idx, u32 *tx_ant,
++int mt76_get_antenna(struct ieee80211_hw *hw, u32 *tx_ant,
+ 		     u32 *rx_ant);
+ int mt76_set_tim(struct ieee80211_hw *hw, struct ieee80211_sta *sta, bool set);
+ void mt76_insert_ccmp_hdr(struct sk_buff *skb, u8 key_id);
+diff --git a/mt7921/main.c b/mt7921/main.c
+index f37a35b9..d982a511 100644
+--- a/mt7921/main.c
++++ b/mt7921/main.c
+@@ -630,7 +630,7 @@ void mt7921_set_runtime_pm(struct mt792x_dev *dev)
+ 	mt76_connac_mcu_set_deep_sleep(&dev->mt76, pm->ds_enable);
+ }
+ 
+-static int mt7921_config(struct ieee80211_hw *hw, int radio_idx, u32 changed)
++static int mt7921_config(struct ieee80211_hw *hw, u32 changed)
+ {
+ 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
+ 	struct mt792x_phy *phy = mt792x_hw_phy(hw);
+@@ -919,7 +919,7 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
+ }
+ EXPORT_SYMBOL_GPL(mt7921_mac_sta_remove);
+ 
+-static int mt7921_set_rts_threshold(struct ieee80211_hw *hw, int radio_idx,
++static int mt7921_set_rts_threshold(struct ieee80211_hw *hw,
+ 				    u32 val)
+ {
+ 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
+@@ -1101,7 +1101,7 @@ mt7921_stop_sched_scan(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
+ }
+ 
+ static int
+-mt7921_set_antenna(struct ieee80211_hw *hw, int radio_idx,
++mt7921_set_antenna(struct ieee80211_hw *hw,
+ 		   u32 tx_ant, u32 rx_ant)
+ {
+ 	struct mt792x_dev *dev = mt792x_hw_dev(hw);
+diff --git a/mt792x.h b/mt792x.h
+index 1f381ab3..6cad3065 100644
+--- a/mt792x.h
++++ b/mt792x.h
+@@ -415,7 +415,7 @@ void mt792x_sta_statistics(struct ieee80211_hw *hw,
+ 			   struct ieee80211_vif *vif,
+ 			   struct ieee80211_sta *sta,
+ 			   struct station_info *sinfo);
+-void mt792x_set_coverage_class(struct ieee80211_hw *hw, int radio_idx,
++void mt792x_set_coverage_class(struct ieee80211_hw *hw,
+ 			       s16 coverage_class);
+ void mt792x_dma_cleanup(struct mt792x_dev *dev);
+ int mt792x_dma_enable(struct mt792x_dev *dev);
+diff --git a/mt792x_core.c b/mt792x_core.c
+index 5a5d7534..33ef6285 100644
+--- a/mt792x_core.c
++++ b/mt792x_core.c
+@@ -305,7 +305,7 @@ EXPORT_SYMBOL_GPL(mt792x_tx_worker);
+ 
+ void mt792x_roc_timer(struct timer_list *timer)
+ {
+-	struct mt792x_phy *phy = timer_container_of(phy, timer, roc_timer);
++	struct mt792x_phy *phy = from_timer(phy, timer, roc_timer);
+ 
+ 	ieee80211_queue_work(phy->mt76->hw, &phy->roc_work);
+ }
+@@ -313,7 +313,7 @@ EXPORT_SYMBOL_GPL(mt792x_roc_timer);
+ 
+ void mt792x_csa_timer(struct timer_list *timer)
+ {
+-	struct mt792x_vif *mvif = timer_container_of(mvif, timer, csa_timer);
++	struct mt792x_vif *mvif = from_timer(mvif, timer, csa_timer);
+ 
+ 	ieee80211_queue_work(mvif->phy->mt76->hw, &mvif->csa_work);
+ }
+@@ -601,7 +601,7 @@ void mt792x_sta_statistics(struct ieee80211_hw *hw,
+ }
+ EXPORT_SYMBOL_GPL(mt792x_sta_statistics);
+ 
+-void mt792x_set_coverage_class(struct ieee80211_hw *hw, int radio_idx,
++void mt792x_set_coverage_class(struct ieee80211_hw *hw,
+ 			       s16 coverage_class)
+ {
+ 	struct mt792x_phy *phy = mt792x_hw_phy(hw);
