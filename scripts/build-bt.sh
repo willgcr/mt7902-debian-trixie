@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-LINUX_STABLE_REPO="${LINUX_STABLE_REPO:-https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git}"
+LINUX_STABLE_REPO="${LINUX_STABLE_REPO:-https://github.com/gregkh/linux.git}"
 BUILD_DIR="${BUILD_DIR:-/tmp/btmtk-build}"
 # KVER selects which kernel to build against. Defaults to the running kernel
 # so live-system use is unchanged; chroot/initramfs/container builders can
