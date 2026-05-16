@@ -14,7 +14,12 @@
 
 set -euo pipefail
 
-LINUX_FW_REPO="${LINUX_FW_REPO:-https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git}"
+# Pin to a specific linux-firmware release tag rather than `main` so a
+# future upstream firmware update doesn't silently swap the blobs out
+# from under us. linux-firmware uses date-based release tags (YYYYMMDD);
+# bump LINUX_FW_TAG to take a newer release after testing it.
+LINUX_FW_TAG="${LINUX_FW_TAG:-20260410}"
+LINUX_FW_RAW="${LINUX_FW_RAW:-https://gitlab.com/kernel-firmware/linux-firmware/-/raw/$LINUX_FW_TAG/mediatek}"
 TMP_DIR="${TMP_DIR:-/tmp/linux-firmware-mt7902}"
 FW_DIR="/lib/firmware/mediatek"
 FILES=(
@@ -28,25 +33,21 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-command -v git >/dev/null 2>&1 || { echo "error: git not installed" >&2; exit 1; }
+command -v curl >/dev/null 2>&1 || { echo "error: curl not installed" >&2; exit 1; }
 mkdir -p "$FW_DIR"
 
-echo ">> sparse-cloning linux-firmware mediatek/ subdir to $TMP_DIR"
+# Fetch the three firmware blobs directly. linux-firmware is multi-GB even
+# with sparse-checkout; for three ~50 KB files curl is dramatically faster
+# than git clone + sparse-checkout, and works against any mirror's raw
+# content endpoint (override via LINUX_FW_RAW=...).
+echo ">> fetching MT7902 firmware blobs from linux-firmware@$LINUX_FW_TAG"
 rm -rf "$TMP_DIR"
-git clone --depth=1 --no-checkout "$LINUX_FW_REPO" "$TMP_DIR"
+mkdir -p "$TMP_DIR/mediatek"
 cd "$TMP_DIR"
-git sparse-checkout init --cone
-git sparse-checkout set mediatek
-git checkout
-
-echo ">> verifying blobs are present"
 for f in "${FILES[@]}"; do
-    if [ ! -f "mediatek/$f" ]; then
-        echo "error: $f not found in linux-firmware tree" >&2
-        echo "       (linux-firmware may not yet ship MT7902 blobs at this commit;" >&2
-        echo "        try a newer linux-firmware checkout)" >&2
-        exit 1
-    fi
+    echo "   $f"
+    curl -fsSL "$LINUX_FW_RAW/$f" -o "mediatek/$f" \
+        || { echo "error: failed to fetch $f from $LINUX_FW_RAW" >&2; exit 1; }
 done
 
 echo ">> installing to $FW_DIR (existing files backed up with .pre-mt7902 suffix)"
